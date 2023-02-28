@@ -1,116 +1,91 @@
-import java.util.ArrayDeque;
-import java.util.Scanner;
+import java.util.*;
 
 public class E {
-    static int inf = 1000000;
-    static int dp[][];
-    static int a[];
+
+    private static final int inf = 1000000;
+    private static int[][] dp;
+    private static int[] costs;
 
 
-    static int DP(int i, int j) {
+    private static int DP(int i, int j) {
         if (j > i) return inf;
-        else {
-            int res;
-            int cost = a[i];
-            if (j <= 0) {
-                if (i >= 1) {
-                    if (cost <= 100) {
-                        int dif = Math.min(DP(i - 1, j + 1), DP(i - 1, j) + cost);
-                        res = dif;
-                    } else {
-                        return DP(i - 1, j + 1);
-                    }
-                } else return 0;
-            } else {
-                if (dp[i][j] != -1) return dp[i][j];
-                if (cost > 100) {
-                    int dif = Math.min(DP(i - 1, j + 1), DP(i - 1, j - 1) + cost);
-                    res = dif;
-                } else {
-                    int dif = Math.min(DP(i - 1, j + 1), DP(i - 1, j) + cost);
-                    res = dif;
-                }
-            }
-            dp[i][j] = res;
-            return res;
+
+        if (j > 0) {
+            if (dp[i][j] != -1) return dp[i][j];
+            if (costs[i] > 100) dp[i][j] = Math.min(DP(i - 1, j + 1), DP(i - 1, j - 1) + costs[i]);
+            else                dp[i][j] = Math.min(DP(i - 1, j + 1), DP(i - 1, j) + costs[i]);
+
+            return dp[i][j];
         }
+
+        if (i >= 1) {
+            if (costs[i] <= 100) {
+                dp[i][j] = Math.min(DP(i - 1, j + 1), DP(i - 1, j) + costs[i]);
+                return dp[i][j];
+            }
+
+            return DP(i - 1, j + 1);
+        }
+
+        return 0;
     }
 
 
-    static void GOODOLDDAYS(ArrayDeque<Integer> used, int i, int j) {
-        if (j < i) {
-            int cost = a[i];
-            if (j <= 0) {
-                if (i >= 1) {
-                    if (cost > 100) {
-                        used.add(i);
-                        GOODOLDDAYS(used, i - 1, j + 1);
-                    } else {
-                        boolean addi = (DP(i, j) == DP(i - 1, j + 1));
-                        if (addi) {
-                            used.add(i);
-                            GOODOLDDAYS(used, i - 1, j + 1);
-                        } else GOODOLDDAYS(used, i - 1, j);
-                    }
+    private static void goodOldDays(List<Integer> used, int i, int j) {
+        if (j >= i) return;
+
+        if (j <= 0) {
+            if (i >= 1) {
+                if (costs[i] > 100 || DP(i, j) == DP(i - 1, j + 1)) {
+                    used.add(i);
+                    goodOldDays(used, i - 1, j + 1);
                 }
-            } else {
-                if (cost <= 100) {
-                    boolean addi = (DP(i - 1, j + 1) == DP(i, j));
-                    if (addi) {
-                        used.add(i);
-                        GOODOLDDAYS(used, i - 1, j + 1);
-                    } else {
-                        GOODOLDDAYS(used, i - 1, j);
-                    }
-                } else {
-                    boolean addi = (DP(i - 1, j + 1) == DP(i, j));
-                    if (addi) {
-                        used.add(i);
-                        GOODOLDDAYS(used, i - 1, j + 1);
-                    } else {
-                        GOODOLDDAYS(used, i - 1, j - 1);
-                    }
-                }
+                else goodOldDays(used, i - 1, j);
             }
+            return;
+        }
+
+        if (DP(i - 1, j + 1) == DP(i, j)) {
+            used.add(i);
+            goodOldDays(used, i - 1, j + 1);
+        } else {
+            if (costs[i] <= 100) goodOldDays(used, i - 1, j);
+            else                 goodOldDays(used, i - 1, j - 1);
         }
     }
 
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+        final int N = scanner.nextInt();
+        costs = new int[N + 1];
 
-        int n = scanner.nextInt();
-        int k1 = 0;
-        int k2 = 0;
-        a = new int[n + 1];
-        for (int i = 1; i <= n; i++) a[i] = scanner.nextInt();
-        dp = new int[n + 1][n + 2];
-        for (int i = 0; i <= n; i++) {
-            for (int j = 0; j <= n + 1; j++)
-                dp[i][j] = -1;
-        }
+        for (int i = 1; i <= N; i++)
+            costs[i] = scanner.nextInt();
 
-        int ans = inf;
+        scanner.close();
 
-        for (int i = 0; i <= n; i++) {
-            if (ans >= DP(n, i)) {
-                ans = DP(n, i);
-                k1 = i;
+
+        dp = new int[N + 1][N + 2];
+        for (int i = 0; i <= N; i++)
+            Arrays.fill(dp[i], -1);
+
+        int minPrice = inf;
+        int couponsLeft = 0;
+
+        for (int i = 0; i <= N; i++) {
+            if (minPrice >= DP(N, i)) {
+                minPrice = DP(N, i);
+                couponsLeft = i;
             }
         }
 
-        System.out.println(ans);
+        List<Integer> used = new LinkedList<>();
+        goodOldDays(used, N, couponsLeft);
+        Collections.reverse(used);
 
-        ArrayDeque<Integer> used = new ArrayDeque<>();
-
-        GOODOLDDAYS(used, n, k1);
-
-        k2 = used.size();
-
-        System.out.println(k1 + " " + k2);
-
-        while (!used.isEmpty()) {
-            System.out.print(used.removeLast() + "\n");
-        }
+        System.out.println(minPrice);
+        System.out.println(couponsLeft + " " + used.size());
+        used.forEach(System.out::println);
     }
 }
